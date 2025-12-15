@@ -1,0 +1,6 @@
+projectKey=devops-app
+serverUrl=http://192.168.27.128:9000
+serverVersion=25.12.0.117093
+dashboardUrl=http://192.168.27.128:9000/dashboard?id=devops-app
+ceTaskId=57e15c66-d2a5-4ba4-85a8-8e468c925804
+ceTaskUrl=http://192.168.27.128:9000/api/ce/task?id=57e15c66-d2a5-4ba4-85a8-8e468c925804
