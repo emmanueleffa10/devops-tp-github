@@ -81,13 +81,14 @@ jobs:
           sudo apt-get install -y trivy
 
       - name: Scan des dépendances Maven
-        run: trivy fs --security-checks vuln --severity CRITICAL,HIGH . -f html -o trivy-report.html
+        run: trivy fs --scanners vuln --severity CRITICAL,HIGH --format json -o trivy-report.json .
 
       - name: Upload Dependency Report
         uses: actions/upload-artifact@v4
         with:
           name: dependency-report
-          path: trivy-report.html
+          path: trivy-report.json
+
 
   # --------------------------
   # 4️⃣ Docker - Build & Scan & Push
