@@ -208,8 +208,8 @@ jobs:
           username: apikey
           password: ${{ secrets.SENGRID_API_KEY }}
           subject: "Pipeline DevSecOps terminé"
-          to: ${{ secrets.EMAIL_TO }}
-          from: jacqueseffa10@gmail.com  # doit être un email validé sur SendGrid
+          to: emmanueleffa10@gmail.com
+          from: jacqueseffa10@gmail.com
           body: |
             Bonjour,
             
