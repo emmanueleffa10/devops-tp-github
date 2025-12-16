@@ -81,7 +81,7 @@ jobs:
           sudo apt-get install -y trivy
 
       - name: Scan des dépendances Maven
-        run: trivy fs --security-checks vuln --severity CRITICAL,HIGH .
+        run: trivy fs --security-checks vuln --severity CRITICAL,HIGH . -f html -o trivy-report.html
 
       - name: Upload Dependency Report
         uses: actions/upload-artifact@v4
@@ -136,8 +136,7 @@ jobs:
       - name: Gitleaks scan
         uses: zricethezav/gitleaks-action@v2
         with:
-          config-path: .gitleaks.toml
-          verbose: true
+          args: "--config .gitleaks.toml --verbose"
 
   # --------------------------
   # 6️⃣ DAST - Scan dynamique avec OWASP ZAP (Docker officiel)
