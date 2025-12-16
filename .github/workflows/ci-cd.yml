@@ -71,11 +71,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Installer Trivy
+      - name: Installer Trivy via le dépôt officiel
         run: |
-          sudo apt-get update && sudo apt-get install -y wget
-          wget https://github.com/aquasecurity/trivy/releases/latest/download/trivy_0.45.1_Linux-64bit.deb
-          sudo dpkg -i trivy_0.45.1_Linux-64bit.deb
+          sudo apt-get update
+          sudo apt-get install -y apt-transport-https gnupg lsb-release curl
+          curl -fsSL https://aquasecurity.github.io/trivy-repo/deb/public.key | sudo gpg --dearmor -o /usr/share/keyrings/trivy-archive-keyring.gpg
+          echo "deb [signed-by=/usr/share/keyrings/trivy-archive-keyring.gpg] https://aquasecurity.github.io/trivy-repo/deb $(lsb_release -sc) main" | sudo tee /etc/apt/sources.list.d/trivy.list
+          sudo apt-get update
+          sudo apt-get install -y trivy
 
       - name: Scan des dépendances Maven
         run: trivy fs --security-checks vuln --severity CRITICAL,HIGH .
