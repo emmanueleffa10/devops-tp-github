@@ -140,7 +140,7 @@ jobs:
           verbose: true
 
   # --------------------------
-  # 6️⃣ DAST - Scan dynamique avec OWASP ZAP (conteneur)
+  # 6️⃣ DAST - Scan dynamique avec OWASP ZAP (Docker)
   # --------------------------
   dast:
     name: DAST Scan (OWASP ZAP)
@@ -149,47 +149,52 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # 1️⃣ Lancer l'application dans un conteneur
-      - name: Démarrer l'application Docker
+      # Réseau Docker
+      - name: Create Docker network
+        run: docker network create dast-net || true
+
+      # Application cible
+      - name: Run application
         run: |
-          docker network create dast-net || true
           docker run -d --name devops-app \
             --network dast-net \
             -p 8080:8080 \
             ${{ secrets.DOCKER_USERNAME }}/devops-java:1.0.0
 
-      # 2️⃣ Lancer ZAP dans un conteneur
-      - name: Démarrer ZAP Docker
+      # ZAP officiel
+      - name: Run OWASP ZAP
         run: |
           docker run -d --name zap \
             --network dast-net \
             -p 8090:8090 \
-            owasp/zap2docker-stable zap.sh -daemon -port 8090 -host 0.0.0.0
+            zaproxy/zap-stable \
+            zap.sh -daemon -port 8090 -host 0.0.0.0
 
-      # 3️⃣ Attendre que l'application soit prête
-      - name: Attendre l'application
-        run: sleep 30
+      # Attente
+      - name: Wait for ZAP
+        run: sleep 40
 
-      # 4️⃣ Lancer le scan via ZAP API
-      - name: Scan avec ZAP
+      # Scan
+      - name: Run ZAP scan
         run: |
           docker exec zap zap-cli -p 8090 status -t 120
           docker exec zap zap-cli -p 8090 open-url http://devops-app:8080
           docker exec zap zap-cli -p 8090 quick-scan http://devops-app:8080
-          docker exec zap zap-cli -p 8090 report -o zap-report.html -f html
+          docker exec zap zap-cli -p 8090 report -o /zap/wrk/zap-report.html -f html
 
-      # 5️⃣ Télécharger le rapport
-      - name: Upload ZAP Report
+      # Upload rapport
+      - name: Upload ZAP report
         uses: actions/upload-artifact@v4
         with:
           name: dast-report
           path: zap-report.html
 
-      # 6️⃣ Nettoyer les conteneurs
-      - name: Stop Docker containers
+      # Nettoyage
+      - name: Cleanup
         run: |
           docker rm -f devops-app zap
           docker network rm dast-net
+
 
 
 
