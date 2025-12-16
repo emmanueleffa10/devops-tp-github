@@ -140,7 +140,7 @@ jobs:
           verbose: true
 
   # --------------------------
-  # 6️⃣ DAST - Scan dynamique avec OWASP ZAP (Docker)
+  # 6️⃣ DAST - Scan dynamique avec OWASP ZAP (Docker officiel)
   # --------------------------
   dast:
     name: DAST Scan (OWASP ZAP)
@@ -161,42 +161,24 @@ jobs:
             -p 8080:8080 \
             ${{ secrets.DOCKER_USERNAME }}/devops-java:1.0.0
 
-      # ZAP officiel
-      - name: Run OWASP ZAP
+      # DAST avec ZAP Baseline (officiel)
+      - name: OWASP ZAP Baseline Scan
         run: |
-          docker run -d --name zap \
+          docker run --rm \
             --network dast-net \
-            -p 8090:8090 \
+            -v $(pwd):/zap/wrk \
             zaproxy/zap-stable \
-            zap.sh -daemon -port 8090 -host 0.0.0.0
+            zap-baseline.py \
+              -t http://devops-app:8080 \
+              -r zap-report.html \
+              -I
 
-      # Attente
-      - name: Wait for ZAP
-        run: sleep 40
-
-      # Scan
-      - name: Run ZAP scan
-        run: |
-          docker exec zap zap-cli -p 8090 status -t 120
-          docker exec zap zap-cli -p 8090 open-url http://devops-app:8080
-          docker exec zap zap-cli -p 8090 quick-scan http://devops-app:8080
-          docker exec zap zap-cli -p 8090 report -o /zap/wrk/zap-report.html -f html
-
-      # Upload rapport
-      - name: Upload ZAP report
+      # Upload du rapport
+      - name: Upload ZAP Report
         uses: actions/upload-artifact@v4
         with:
           name: dast-report
           path: zap-report.html
-
-      # Nettoyage
-      - name: Cleanup
-        run: |
-          docker rm -f devops-app zap
-          docker network rm dast-net
-
-
-
 
   # --------------------------
   # 7️⃣ Notifications Email
