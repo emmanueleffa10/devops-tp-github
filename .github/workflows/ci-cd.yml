@@ -192,7 +192,7 @@ jobs:
 
 
   # =====================================================
-  # 7️⃣ NOTIFICATION EMAIL – SENDGRID
+  # 7️⃣ NOTIFICATION EMAIL – SENDGRID API
   # =====================================================
   notify:
     name: Email Notification
@@ -200,22 +200,23 @@ jobs:
     needs: [build, sca, docker, secrets_scan, dast]
     if: always()
     steps:
-      - name: Send Email (SendGrid)
-        uses: dawidd6/action-send-mail@v3
-        with:
-          server_address: smtp.sendgrid.net
-          server_port: 587
-          username: apikey
-          password: ${{ secrets.SENGRID_API_KEY }}
-          subject: "Pipeline DevSecOps terminé"
-          to: emmanueleffa10@gmail.com
-          from: jacqueseffa10@gmail.com
-          body: |
-            Bonjour,
-            
-            Le pipeline DevSecOps est terminé pour le dépôt : ${{ github.repository }}
-            Commit : ${{ github.sha }}
-            Statut : ${{ job.status }}
-            
-            Cordialement,
-            DevSecOps CI/CD
+      - name: Send Email via SendGrid API
+        run: |
+          curl -X POST https://api.sendgrid.com/v3/mail/send \
+            -H "Authorization: Bearer ${{ secrets.SENDGRID_API_KEY }}" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "personalizations": [
+                {
+                  "to": [{"email": "${{ secrets.EMAIL_TO }}"}],
+                  "subject": "Pipeline DevSecOps terminé"
+                }
+              ],
+              "from": {"email": "${{ secrets.EMAIL_FROM }}"},
+              "content": [
+                {
+                  "type": "text/plain",
+                  "value": "Bonjour,\n\nLe pipeline DevSecOps est terminé pour le dépôt : ${{ github.repository }}\nCommit : ${{ github.sha }}\nStatut : ${{ job.status }}\n\nCordialement,\nDevSecOps CI/CD"
+                }
+              ]
+            }'
