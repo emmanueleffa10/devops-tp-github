@@ -206,21 +206,16 @@ jobs:
           server_address: smtp.sendgrid.net
           server_port: 587
           username: apikey
-          password: ${{ secrets.SENDGRID_API_KEY }}
+          password: ${{ secrets.SENGRID_API_KEY }}
           subject: "Pipeline DevSecOps terminé"
           to: ${{ secrets.EMAIL_TO }}
-          from: ${{ secrets.EMAIL_FROM }}
+          from: ${{ secrets.EMAIL_FROM }}  # doit être un email validé sur SendGrid
           body: |
             Bonjour,
-
-            Le pipeline DevSecOps est terminé pour le dépôt :
-            ${{ github.repository }}
-
-            Commit :
-            ${{ github.sha }}
-
-            Statut :
-            ${{ job.status }}
-
+            
+            Le pipeline DevSecOps est terminé pour le dépôt : ${{ github.repository }}
+            Commit : ${{ github.sha }}
+            Statut : ${{ job.status }}
+            
             Cordialement,
             DevSecOps CI/CD
