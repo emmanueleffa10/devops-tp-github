@@ -153,6 +153,10 @@ jobs:
           sudo apt install -y snapd
           sudo snap install zaproxy --classic
 
+      - name: Ajouter Snap au PATH
+        run: export PATH=$PATH:/snap/bin
+
+
       - name: Lancer l'application en conteneur
         run: |
           docker run -d -p 8080:8080 ${{ secrets.DOCKER_USERNAME }}/devops-java:1.0.0
@@ -160,24 +164,18 @@ jobs:
       - name: Scan OWASP ZAP
         run: |
           # Démarrer ZAP en arrière-plan
-          zap.sh -daemon -port 8080 -host 0.0.0.0 &
-          sleep 15  # attendre que ZAP soit prêt
+          /snap/bin/zaproxy -daemon -port 8080 -host 0.0.0.0 &
+          sleep 20  # attendre que ZAP soit prêt
 
-          # Lancer le scan rapide
-          curl "http://localhost:8080/JSON/ascan/action/scan/?url=http://localhost:8080"
+          # Lancer le scan rapide via l'API
+          curl "http://192.168.27.128:8080/JSON/ascan/action/scan/?url=http://192.168.27.128:8080"
 
           # Générer le rapport HTML
-          zap.sh -cmd -quickurl http://localhost:8080 -quickout zap-report.html -quickprogress
+          /snap/bin/zaproxy -cmd -quickurl http://192.168.27.128:8080 -quickout zap-report.html -quickprogress
 
           # Arrêter ZAP
-          pkill -f zap.sh
+          pkill -f zaproxy
 
-
-      - name: Upload ZAP Report
-        uses: actions/upload-artifact@v4
-        with:
-          name: dast-report
-          path: zap-report.html
 
   # --------------------------
   # 7️⃣ Notifications Email
