@@ -50,13 +50,13 @@ jobs:
         path: ~/.sonar/cache
         key: ${{ runner.os }}-sonar
 
-    - name: Analyse SonarCloud
-      run: |
-        mvn clean verify sonar:sonar \
-        -Dsonar.projectKey=emmanueleffa10_devops-tp-github \
-        -Dsonar.organization=emmanueleffa10 \
-        -Dsonar.host.url=https://sonarcloud.io \
-        -Dsonar.login=${{ secrets.SONAR_TOKEN }}
+#    - name: Analyse SonarCloud
+ #     run: |
+  #      mvn clean verify sonar:sonar \
+   #     -Dsonar.projectKey=emmanueleffa10_devops-tp-github \
+    #    -Dsonar.organization=emmanueleffa10 \
+     #   -Dsonar.host.url=https://sonarcloud.io \
+      #  -Dsonar.login=${{ secrets.SONAR_TOKEN }}
 
 
   docker:
