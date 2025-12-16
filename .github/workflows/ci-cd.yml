@@ -108,6 +108,15 @@ jobs:
       - name: Build Docker Image
         run: docker build -t ${{ secrets.DOCKER_USERNAME }}/devops-java:1.0.0 .
 
+      - name: Installer Trivy pour le scan Docker
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y apt-transport-https gnupg lsb-release curl
+          curl -fsSL https://aquasecurity.github.io/trivy-repo/deb/public.key | sudo gpg --dearmor -o /usr/share/keyrings/trivy-archive-keyring.gpg
+          echo "deb [signed-by=/usr/share/keyrings/trivy-archive-keyring.gpg] https://aquasecurity.github.io/trivy-repo/deb $(lsb_release -sc) main" | sudo tee /etc/apt/sources.list.d/trivy.list
+          sudo apt-get update
+          sudo apt-get install -y trivy
+
       - name: Docker Scan Image
         run: trivy image --severity CRITICAL,HIGH ${{ secrets.DOCKER_USERNAME }}/devops-java:1.0.0
 
