@@ -220,3 +220,101 @@ jobs:
                 }
               ]
             }'
+
+  # --------------------------
+  # 8️⃣ Shift-left / Sécurité côté développeur
+  # --------------------------
+  dev_security:
+    name: Sécurité côté développeur (Shift-left)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout du code
+        uses: actions/checkout@v4
+
+      - name: Conseils et check-list sécurité pour les développeurs
+        run: |
+          echo "🔒 Shift-left Security Checklist :"
+          echo "- Installez SonarLint / ESLint / Semgrep dans votre IDE"
+          echo "- Bandit pour Python si nécessaire"
+          echo "- Vérifiez les secrets localement avec Gitleaks avant commit"
+          echo "- Sensibilisation aux injections, XSS, et bonnes pratiques de codage sécurisé"
+
+  # --------------------------
+  # 9️⃣ Reporting global
+  # --------------------------
+  reporting:
+    name: Centralisation des rapports de sécurité
+    runs-on: ubuntu-latest
+    needs: [sca, docker, secrets_scan, dast]
+    steps:
+      - name: Checkout du code
+        uses: actions/checkout@v4
+
+      - name: Créer le répertoire des rapports
+        run: mkdir -p reports
+
+      - name: Copier les rapports existants
+        run: |
+          cp trivy-report.json reports/ || echo "Pas de rapport Trivy"
+          cp docker-trivy-report.json reports/ || echo "Pas de rapport Docker Trivy"
+          cp gitleaks-report.json reports/ || echo "Pas de rapport Gitleaks"
+          cp zap-report.html reports/ || echo "Pas de rapport ZAP"
+
+      - name: Générer un résumé global
+        run: |
+          echo "# Résumé Global Sécurité" > reports/SUMMARY.md
+          for report in reports/*; do
+            echo "## $report" >> reports/SUMMARY.md
+            cat $report >> reports/SUMMARY.md || echo "Erreur lecture $report" >> reports/SUMMARY.md
+          done
+
+      - name: Upload all reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-reports
+          path: reports/
+
+
+  # --------------------------
+  # 10️⃣ Alerting / Notifications Email
+  # --------------------------
+  alerting_email:
+    name: Notifications Email Sécurité
+    runs-on: ubuntu-latest
+    needs: reporting
+    if: always()
+    steps:
+      - name: Checkout du code
+        uses: actions/checkout@v4
+
+      - name: Récupérer le résumé global
+        run: |
+          if [ -f reports/SUMMARY.md ]; then
+            SUMMARY=$(cat reports/SUMMARY.md)
+          else
+            SUMMARY="Aucun rapport disponible."
+          fi
+          echo "SUMMARY<<EOF" >> $GITHUB_ENV
+          echo "$SUMMARY" >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
+
+      - name: Envoyer l'email via SendGrid
+        run: |
+          curl -X POST https://api.sendgrid.com/v3/mail/send \
+            -H "Authorization: Bearer ${{ secrets.SENDGRID_API_KEY }}" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "personalizations": [
+                {
+                  "to": [{"email": "${{ secrets.EMAIL_TO }}"}],
+                  "subject": "Pipeline DevSecOps terminé - Résumé sécurité"
+                }
+              ],
+              "from": {"email": "${{ secrets.EMAIL_FROM }}"},
+              "content": [
+                {
+                  "type": "text/plain",
+                  "value": "Bonjour,\n\nLe pipeline DevSecOps est terminé pour le dépôt : ${{ github.repository }}\nCommit : ${{ github.sha }}\nStatut : ${{ job.status }}\n\nRésumé sécurité global :\n\n'"$SUMMARY"'\n\nCordialement,\nDevSecOps CI/CD"
+                }
+              ]
+            }'
