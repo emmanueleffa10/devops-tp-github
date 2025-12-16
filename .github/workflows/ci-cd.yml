@@ -8,13 +8,13 @@ on:
 
 jobs:
   # --------------------------
-  # 1️⃣ Build Maven
+  # 1️⃣ Build Maven Build
   # --------------------------
   build:
     name: Build Maven
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout du code
+      - name: Checkout du cod
         uses: actions/checkout@v4
 
       - name: Setup Java 21
