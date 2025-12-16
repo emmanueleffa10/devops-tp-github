@@ -140,41 +140,57 @@ jobs:
           verbose: true
 
   # --------------------------
-  # 6️⃣ DAST - Scan dynamique avec OWASP ZAP
+  # 6️⃣ DAST - Scan dynamique avec OWASP ZAP (conteneur)
   # --------------------------
   dast:
     name: DAST Scan (OWASP ZAP)
     runs-on: ubuntu-latest
     needs: docker
     steps:
-      - name: Installer OWASP ZAP
+      - uses: actions/checkout@v4
+
+      # 1️⃣ Lancer l'application dans un conteneur
+      - name: Démarrer l'application Docker
         run: |
-          sudo apt update
-          sudo apt install -y snapd
-          sudo snap install zaproxy --classic
+          docker network create dast-net || true
+          docker run -d --name devops-app \
+            --network dast-net \
+            -p 8080:8080 \
+            ${{ secrets.DOCKER_USERNAME }}/devops-java:1.0.0
 
-      - name: Ajouter Snap au PATH
-        run: export PATH=$PATH:/snap/bin
-
-
-      - name: Lancer l'application en conteneur
+      # 2️⃣ Lancer ZAP dans un conteneur
+      - name: Démarrer ZAP Docker
         run: |
-          docker run -d -p 8080:8080 ${{ secrets.DOCKER_USERNAME }}/devops-java:1.0.0
+          docker run -d --name zap \
+            --network dast-net \
+            -p 8090:8090 \
+            owasp/zap2docker-stable zap.sh -daemon -port 8090 -host 0.0.0.0
 
-      - name: Scan OWASP ZAP
+      # 3️⃣ Attendre que l'application soit prête
+      - name: Attendre l'application
+        run: sleep 30
+
+      # 4️⃣ Lancer le scan via ZAP API
+      - name: Scan avec ZAP
         run: |
-          # Démarrer ZAP en arrière-plan
-          /snap/bin/zaproxy -daemon -port 8080 -host 0.0.0.0 &
-          sleep 20  # attendre que ZAP soit prêt
+          docker exec zap zap-cli -p 8090 status -t 120
+          docker exec zap zap-cli -p 8090 open-url http://devops-app:8080
+          docker exec zap zap-cli -p 8090 quick-scan http://devops-app:8080
+          docker exec zap zap-cli -p 8090 report -o zap-report.html -f html
 
-          # Lancer le scan rapide via l'API
-          curl "http://192.168.27.128:8080/JSON/ascan/action/scan/?url=http://192.168.27.128:8080"
+      # 5️⃣ Télécharger le rapport
+      - name: Upload ZAP Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: dast-report
+          path: zap-report.html
 
-          # Générer le rapport HTML
-          /snap/bin/zaproxy -cmd -quickurl http://192.168.27.128:8080 -quickout zap-report.html -quickprogress
+      # 6️⃣ Nettoyer les conteneurs
+      - name: Stop Docker containers
+        run: |
+          docker rm -f devops-app zap
+          docker network rm dast-net
 
-          # Arrêter ZAP
-          pkill -f zaproxy
 
 
   # --------------------------
