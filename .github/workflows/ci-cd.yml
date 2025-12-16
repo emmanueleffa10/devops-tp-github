@@ -6,9 +6,6 @@ on:
   pull_request:
   workflow_dispatch:
 
-env:
-  SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
-
 jobs:
   # --------------------------
   # 1️⃣ Build Maven
@@ -56,16 +53,16 @@ jobs:
           path: ~/.sonar/cache
           key: ${{ runner.os }}-sonar
 
- #     - name: Analyse SonarCloud
- #       run: |
- #      mvn clean verify sonar:sonar \
- #          -Dsonar.projectKey=emmanueleffa10_devops-tp-github \
- #           -Dsonar.organization=emmanueleffa10 \
- #            -Dsonar.host.url=https://sonarcloud.io \
- #            -Dsonar.login=${{ secrets.SONAR_TOKEN }}
+#      - name: Analyse SonarCloud
+#        run: |
+#          mvn clean verify sonar:sonar \
+#            -Dsonar.projectKey=emmanueleffa10_devops-tp-github \
+#            -Dsonar.organization=emmanueleffa10 \
+#            -Dsonar.host.url=https://sonarcloud.io \
+#            -Dsonar.login=${{ secrets.SONAR_TOKEN }}
 
   # --------------------------
-  # 3️⃣ SCA - Analyse des dépendances
+  # 3️⃣ SCA - Analyse des dépendances (Trivy)
   # --------------------------
   sca:
     name: Scan des dépendances (Trivy)
@@ -77,8 +74,8 @@ jobs:
       - name: Installer Trivy
         run: |
           sudo apt-get update && sudo apt-get install -y wget
-          wget https://github.com/aquasecurity/trivy/releases/latest/download/trivy_0.44.1_Linux-64bit.deb
-          sudo dpkg -i trivy_0.44.1_Linux-64bit.deb
+          wget https://github.com/aquasecurity/trivy/releases/latest/download/trivy_0.45.1_Linux-64bit.deb
+          sudo dpkg -i trivy_0.45.1_Linux-64bit.deb
 
       - name: Scan des dépendances Maven
         run: trivy fs --security-checks vuln --severity CRITICAL,HIGH .
@@ -172,10 +169,10 @@ jobs:
       - name: Send Email Notification
         uses: dawidd6/action-send-mail@v3
         with:
-          server_address: smtp.gmail.com          # ou autre serveur SMTP
-          server_port: 465                        # 465 pour SSL
-          username: ${{ secrets.EMAIL_USERNAME }} # ton email
-          password: ${{ secrets.EMAIL_PASSWORD }} # mot de passe ou app password
+          server_address: smtp.gmail.com
+          server_port: 465
+          username: ${{ secrets.EMAIL_USERNAME }}
+          password: ${{ secrets.EMAIL_PASSWORD }}
           subject: "Pipeline DevSecOps terminé"
           body: |
             Bonjour,
@@ -186,5 +183,5 @@ jobs:
 
             Cordialement,
             Équipe DevSecOps
-          to:  ${{ secrets.EMAIL_TO }}            # destinataire
+          to: ${{ secrets.EMAIL_TO }}
           from: ${{ secrets.EMAIL_USERNAME }}
