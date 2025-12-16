@@ -149,11 +149,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # Réseau Docker
       - name: Create Docker network
         run: docker network create dast-net || true
 
-      # Application cible
       - name: Run application
         run: |
           docker run -d --name devops-app \
@@ -161,7 +159,19 @@ jobs:
             -p 8080:8080 \
             ${{ secrets.DOCKER_USERNAME }}/devops-java:1.0.0
 
-      # DAST avec ZAP Baseline (officiel)
+      - name: Wait for application to be ready
+        run: |
+          for i in {1..30}; do
+            if curl -s http://localhost:8080 > /dev/null; then
+              echo "Application is ready"
+              break
+            fi
+            sleep 5
+          done
+
+      - name: Fix permissions for ZAP workspace
+        run: chmod -R 777 .
+
       - name: OWASP ZAP Baseline Scan
         run: |
           docker run --rm \
@@ -171,14 +181,15 @@ jobs:
             zap-baseline.py \
               -t http://devops-app:8080 \
               -r zap-report.html \
-              -I
+              -I \
+              --autooff
 
-      # Upload du rapport
       - name: Upload ZAP Report
         uses: actions/upload-artifact@v4
         with:
           name: dast-report
           path: zap-report.html
+
 
   # --------------------------
   # 7️⃣ Notifications Email
