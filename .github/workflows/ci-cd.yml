@@ -191,30 +191,36 @@ jobs:
           path: zap-report.html
 
 
-  # --------------------------
-  # 7️⃣ Notifications Email
-  # --------------------------
+  # =====================================================
+  # 7️⃣ NOTIFICATION EMAIL – SENDGRID
+  # =====================================================
   notify:
     name: Email Notification
     runs-on: ubuntu-latest
-    needs: [sast, sca, docker, secrets_scan, dast]
+    needs: [build, sca, docker, secrets_scan, dast]
+    if: always()
     steps:
-      - name: Send Email Notification
+      - name: Send Email (SendGrid)
         uses: dawidd6/action-send-mail@v3
         with:
-          server_address: smtp.gmail.com
-          server_port: 465
-          username: ${{ secrets.EMAIL_USERNAME }}
-          password: ${{ secrets.EMAIL_PASSWORD }}
+          server_address: smtp.sendgrid.net
+          server_port: 587
+          username: apikey
+          password: ${{ secrets.SENDGRID_API_KEY }}
           subject: "Pipeline DevSecOps terminé"
+          to: ${{ secrets.EMAIL_TO }}
+          from: ${{ secrets.EMAIL_FROM }}
           body: |
             Bonjour,
 
-            Le pipeline DevSecOps GitHub Actions s'est terminé pour le commit ${{ github.sha }} sur le workflow ${{ github.workflow }}.
+            Le pipeline DevSecOps est terminé pour le dépôt :
+            ${{ github.repository }}
 
-            Vous pouvez consulter les rapports SAST, SCA, Docker, Secrets et DAST dans les artifacts GitHub Actions.
+            Commit :
+            ${{ github.sha }}
+
+            Statut :
+            ${{ job.status }}
 
             Cordialement,
-            Équipe DevSecOps
-          to: ${{ secrets.EMAIL_TO }}
-          from: ${{ secrets.EMAIL_USERNAME }}
+            DevSecOps CI/CD
